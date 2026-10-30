@@ -98,16 +98,19 @@ export default function GameCanvas({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase()
-      if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' ', 'z'].includes(k)) {
-        if (e.key === ' ' || e.key === 'Spacebar') {
-          e.preventDefault()
-        }
+      // SPEC: Z키 및 조작키 입력 시 브라우저 기본 동작 및 폼/페이지 리셋 방지를 위해 e.preventDefault() 필수 실행
+      if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' ', 'z', 'spacebar'].includes(k)) {
+        e.preventDefault()
       }
       keysRef.current[k] = true
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      keysRef.current[e.key.toLowerCase()] = false
+      const k = e.key.toLowerCase()
+      if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' ', 'z', 'spacebar'].includes(k)) {
+        e.preventDefault()
+      }
+      keysRef.current[k] = false
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -323,10 +326,12 @@ export default function GameCanvas({
         }
       }
 
-      // [SPEC 규칙] 방울 직선 발사:
-      // Z키를 누르면 캐릭터 전방으로 지면과 수평한 직선 궤적으로 약 250px 발사된 후 부유 상태로 전환
+      // [SPEC 규칙 v6] 방울 발사 및 리셋 방지:
+      // 1. Z키 발사 시 발사 쿨타임(0.25초 = 250ms) 적용
+      // 2. 전체 게임 State(점수, 목숨, 스테이지)를 절대로 재초기화하지 않고 bubbles 배열에만 발사체 추가
+      // 3. 수평한 직선 궤적으로 약 250px 발사 후 부유 상태 전환
       const now = Date.now()
-      if (shoot && now - lastShootTime > 320) {
+      if (shoot && now - lastShootTime >= 250) {
         const dir: 1 | -1 = player.facing === 'right' ? 1 : -1
         const startX = player.facing === 'right' ? player.x + player.w + 6 : player.x - 6
         const startY = player.y + player.h / 2
@@ -426,7 +431,6 @@ export default function GameCanvas({
 
         // 수명 다한 방울 제거
         if (b.life <= 0) {
-          // 적이 갇혀있으면 적도 탈출 또는 제거
           if (b.trappedEnemyId !== null) {
             const en = enemies.find((e) => e.id === b.trappedEnemyId)
             if (en && !en.dead) {
@@ -484,13 +488,12 @@ export default function GameCanvas({
         }
       }
 
-      // 스테이지 클리어 확인: 맵 내의 모든 적을 처치하면 스테이지 클리어 효과 후 다음 스테이지로 즉시 이동
+      // 스테이지 클리어 확인
       const remainingEnemies = enemies.filter((e) => !e.dead)
       if (remainingEnemies.length === 0) {
         stageClearTimer++
         if (stageClearTimer > 35) {
           stageClearTimer = 0
-          // 기본 총 5개 스테이지 순환
           let nextStg = gameStateRef.current.stage + 1
           if (nextStg > 5) nextStg = 1
           gameStateRef.current.stage = nextStg
@@ -594,7 +597,6 @@ export default function GameCanvas({
       // 방울 렌더링
       for (const b of bubbles) {
         ctx.save()
-        // 방울 원체
         ctx.fillStyle = b.trappedEnemyId !== null ? 'rgba(233, 69, 96, 0.4)' : 'rgba(0, 255, 255, 0.3)'
         ctx.beginPath()
         ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2)

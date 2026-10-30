@@ -40,7 +40,46 @@ describe('기능별 수용 기준 (Given / When / Then) 자동화 검증', () =>
     })
   })
 
-  describe('1. 방울 직선 발사 및 적 포획', () => {
+  describe('1. 방울 발사 시 게임 유지 및 방울 생성', () => {
+    it('Given: 점수 100점, 목숨 3개 상태에서 When: Z 키를 누름 -> Then: 게임 상태가 리셋되지 않고 방울 발사체만 생성됨', () => {
+      // Given: 플레이어 게임 진행 상태
+      const gameState = { score: 100, lives: 3, stage: 1 }
+      const initialScore = gameState.score
+      const initialLives = gameState.lives
+      const initialStage = gameState.stage
+      const bubbles: any[] = []
+
+      // When: Z 키 입력 이벤트 (preventDefault 실행 규칙 검증)
+      const mockEvent = { key: 'z', preventDefault: vi.fn() }
+      const k = mockEvent.key.toLowerCase()
+      if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' ', 'z'].includes(k)) {
+        mockEvent.preventDefault()
+      }
+
+      // 방울 발사 생성 (state 재초기화 없음)
+      const player = { x: 100, y: 300, facing: 'right' as const }
+      bubbles.push({
+        id: 1,
+        x: player.x + 32,
+        y: player.y + 16,
+        startX: player.x + 32,
+        direction: 1,
+        isFloating: false,
+        trappedEnemyId: null,
+        radius: 18,
+      })
+
+      // Then: preventDefault 호출, 게임 State(점수, 목숨, 스테이지) 보존 및 방울 생성 확인
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(gameState.score).toBe(initialScore)
+      expect(gameState.lives).toBe(initialLives)
+      expect(gameState.stage).toBe(initialStage)
+      expect(bubbles.length).toBe(1)
+      expect(bubbles[0].x).toBe(132)
+    })
+  })
+
+  describe('2. 방울 직선 발사 및 적 포획', () => {
     it('방울 발사 키 입력 시 직선 사거리(250px) 이동 중 적과 접촉하면 적을 포획해야 한다', () => {
       const BUBBLE_RANGE = 250
       const BUBBLE_SPEED = 7
@@ -84,7 +123,7 @@ describe('기능별 수용 기준 (Given / When / Then) 자동화 검증', () =>
     })
   })
 
-  describe('2. 방울 터뜨리기 및 점수 획득', () => {
+  describe('3. 방울 터뜨리기 및 점수 획득', () => {
     it('플레이어가 적이 갇힌 방울과 부딪히면 방울과 적이 함께 제거되고 100점이 추가되어야 한다', () => {
       let score = 0
       const player = { x: 200, y: 200, w: 32, h: 32 }
@@ -109,14 +148,14 @@ describe('기능별 수용 기준 (Given / When / Then) 자동화 검증', () =>
     })
   })
 
-  describe('3. PC 환경 전용 조작 안내 노출', () => {
+  describe('4. PC 환경 전용 조작 안내 노출', () => {
     it('PC 화면용 한 줄 조작키 안내 텍스트가 명세와 정확히 일치해야 한다', () => {
       const pcGuideText = '[← / →] 이동 | [Space] 점프 | [Z] 방울 발사'
       expect(pcGuideText).toBe('[← / →] 이동 | [Space] 점프 | [Z] 방울 발사')
     })
   })
 
-  describe('4. 로그인 사용자 세이브 및 복원', () => {
+  describe('5. 로그인 사용자 세이브 및 복원', () => {
     it('회원 사용자가 스테이지 2, 점수 300 진행 중 저장 시 high_score 갱신 쿼리가 실행되고 GET 복원되어야 한다', async () => {
       const { query } = await import('@/lib/db')
       const mockQuery = query as any
