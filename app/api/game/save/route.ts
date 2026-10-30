@@ -3,6 +3,8 @@ import { query } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const cookieStore = cookies()
@@ -14,17 +16,19 @@ export async function GET() {
     }
 
     const result = await query(
-      'SELECT stage, score, lives, updated_at FROM game_saves WHERE user_id = $1',
+      'SELECT stage, score, high_score, lives, updated_at FROM game_saves WHERE user_id = $1',
       [session.userId]
     )
 
     if (result.rows.length === 0) {
-      // 세이브 데이터가 없으면 기본값 반환 후 생성
       await query(
-        'INSERT INTO game_saves (user_id, stage, score, lives) VALUES ($1, 1, 0, 3) ON CONFLICT (user_id) DO NOTHING',
+        'INSERT INTO game_saves (user_id, stage, score, high_score, lives) VALUES ($1, 1, 0, 0, 3) ON CONFLICT (user_id) DO NOTHING',
         [session.userId]
       )
-      return NextResponse.json({ save: { stage: 1, score: 0, lives: 3 } }, { status: 200 })
+      return NextResponse.json(
+        { save: { stage: 1, score: 0, high_score: 0, lives: 3 } },
+        { status: 200 }
+      )
     }
 
     return NextResponse.json({ save: result.rows[0] }, { status: 200 })
@@ -50,11 +54,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: '필수 게임 데이터가 누락되었습니다.' }, { status: 400 })
     }
 
+    // SPEC 주요 쿼리 규칙:
+    // 스테이지 완료 시 stage, score, lives를 UPDATE하며, 기존 high_score보다 현재 score가 높으면 high_score도 함께 갱신
     await query(
-      `INSERT INTO game_saves (user_id, stage, score, lives, updated_at) 
-       VALUES ($1, $2, $3, $4, NOW()) 
+      `INSERT INTO game_saves (user_id, stage, score, high_score, lives, updated_at) 
+       VALUES ($1, $2, $3, $3, $4, NOW()) 
        ON CONFLICT (user_id) 
-       DO UPDATE SET stage = $2, score = $3, lives = $4, updated_at = NOW()`,
+       DO UPDATE SET 
+         stage = $2, 
+         score = $3, 
+         high_score = GREATEST(game_saves.high_score, $3),
+         lives = $4, 
+         updated_at = NOW()`,
       [session.userId, stage, score, lives]
     )
 

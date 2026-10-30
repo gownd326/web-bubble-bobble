@@ -2,14 +2,15 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS game_saves (
     id SERIAL PRIMARY KEY,
-    user_id INT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    stage INT DEFAULT 1,
-    score INT DEFAULT 0,
-    lives INT DEFAULT 3,
-    updated_at TIMESTAMP DEFAULT NOW()
+    user_id INT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    stage INT NOT NULL DEFAULT 1,
+    score INT NOT NULL DEFAULT 0,
+    high_score INT NOT NULL DEFAULT 0,
+    lives INT NOT NULL DEFAULT 3,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

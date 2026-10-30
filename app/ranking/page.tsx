@@ -5,8 +5,7 @@ import Link from 'next/link'
 
 interface RankingItem {
   username: string
-  score: number
-  stage: number
+  high_score: number
   updated_at: string
 }
 
@@ -39,10 +38,10 @@ export default function RankingPage() {
         {/* 헤더 */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl md:text-5xl font-bold tracking-wider text-[#FF5722]">
-            🏆 순위표
+            순위표
           </h1>
           <p className="text-sm md:text-base text-gray-300">
-            웹 보글보글 명예의 전당! 최고 점수 기록을 확인하세요.
+            전체 사용자의 최고 점수 순위 표시
           </p>
         </div>
 
@@ -68,9 +67,8 @@ export default function RankingPage() {
               <thead>
                 <tr className="border-b-2 border-[#0f3460] text-[#FF5722] text-sm md:text-base">
                   <th className="py-3 px-4 text-center w-16">순위</th>
-                  <th className="py-3 px-4">플레이어</th>
-                  <th className="py-3 px-4 text-right">점수</th>
-                  <th className="py-3 px-4 text-right">최고 스테이지</th>
+                  <th className="py-3 px-4">아이디</th>
+                  <th className="py-3 px-4 text-right">최고 점수</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800 text-sm md:text-base">
@@ -91,8 +89,9 @@ export default function RankingPage() {
                       {index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : index + 1}
                     </td>
                     <td className="py-3 px-4 font-medium">{item.username}</td>
-                    <td className="py-3 px-4 text-right text-green-400 font-bold">{item.score.toLocaleString()} 점</td>
-                    <td className="py-3 px-4 text-right text-yellow-400">{item.stage} 스테이지</td>
+                    <td className="py-3 px-4 text-right text-green-400 font-bold">
+                      {(item.high_score ?? 0).toLocaleString()} 점
+                    </td>
                   </tr>
                 ))}
               </tbody>
